@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     String line;
     String msgout;
     Thread handleServer;
-    public static final int SERVERPORT = 1201;
+    public static final int SERVERPORT = 5001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
         etInput = findViewById(R.id.etInput);
         tvMsgArea = findViewById(R.id.tvMsgArea);
         btnSend = findViewById(R.id.btnSend);
-        tvMsgArea.setText("");
+        tvMsgArea.setText("Waiting for client's connection...");
 
 
         this.ConnectionThread = new Thread(new ConnectionThread());
@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
+                                    etInput.setText("");
                                     tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\n" + msgout);
                                 }
                             });
@@ -87,12 +88,28 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 ServerSocket serverSocket=new ServerSocket(SERVERPORT);
-                socket = serverSocket.accept();
-                HandleClientSocket handleClientSocket = new HandleClientSocket(socket);
-                handleServer=new Thread(handleClientSocket);
-                handleServer.start();
+                while(true){
+                    socket = serverSocket.accept();
 
-                return;
+                    msgout = "Server: You have connected to the server..\n";
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            etInput.setText("");
+                            tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\nClient has connected to the Server...\n");
+                        }
+                    });
+
+                    OutputStream outputStream = socket.getOutputStream();
+
+                    outputStream.write(msgout.getBytes());
+
+                    HandleClientSocket handleClientSocket = new HandleClientSocket(socket);
+                    handleServer=new Thread(handleClientSocket);
+                    handleServer.start();
+                }
+
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -115,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
         public void run() {
 
-//            while (!Thread.currentThread().isInterrupted()) {
+            // while (!Thread.currentThread().isInterrupted()) {
 
             try {
 
@@ -132,12 +149,22 @@ public class MainActivity extends AppCompatActivity {
 
 
                 }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tvMsgArea.setText(tvMsgArea.getText().toString().trim() + "\nClient has disconnected, please restart the client...");
+                    }
+
+                });
+                clientSocket.close();
+
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-//            }
+            //   }
+
 
         }
     }
